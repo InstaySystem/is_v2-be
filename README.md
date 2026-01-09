@@ -1,1 +1,91 @@
-Đề án tốt nghiệp
+## **This is my graduation project; please ask my permission to use it**
+
+## GET STARTED
+
+### Use Make
+
+*With Golang (require version 1.25+)*
+
+```bash
+cp ./configs/example.yml ./configs/config.yml #modify the ./configs/config.yml file according to your configuration
+make run
+```
+
+*With Docker*
+
+```bash
+cp .env.example .env.local #modify the .env.local file according to your configuration
+make docker-br
+```
+
+### CLI
+
+*With Golang (require version 1.25+)*
+
+```bash
+cp ./configs/example.yml ./configs/config.yml #modify the ./configs/config.yml file according to your configuration
+go build -o ./tmp/main ./cmd/instay
+./tmp main
+```
+
+*With Docker*
+
+```bash
+cp .env.example .env.local #modify the .env.local file according to your configuration
+docker build -t instay-be .
+docker run --env-file .env.local -d -p 8080:8080 --name instay instay-be
+```
+
+### Project Structure 
+
+```
+├── 📁 cmd
+│   ├── 📁 healthcheck
+│   ├── 📁 instay
+│   └── 📁 seeder
+├── 📁 configs
+├── 📁 docs
+├── 📁 internal
+│   ├── 📁 application
+│   │   ├── 📁 dto
+│   │   ├── 📁 port
+│   │   └── 📁 usecase
+│   ├── 📁 container
+│   ├── 📁 domain
+│   │   ├── 📁 model
+│   │   ├── 📁 repository
+│   │   └── 📁 service
+│   └── 📁 infrastructure
+│       ├── 📁 api
+│       │   ├── 📁 http
+│       │   │   ├── 📁 handler
+│       │   │   ├── 📁 middleware
+│       │   │   └── 📁 router
+│       ├── 📁 config
+│       ├── 📁 initialization
+│       ├── 📁 persistence
+│       │   └── 📁 orm
+│       ├── 📁 provider
+│       │   ├── 📁 jwt
+│       │   ├── 📁 rabbitmq
+│       │   ├── 📁 redis
+│       │   └── 📁 smtp
+│       ├── 📁 realtime
+│       │   ├── 📁 sse
+│       │   └── 📁 ws
+│       └── 📁 worker
+├── 📁 logs
+├── 📁 pkg
+│   ├── 📁 constants
+│   ├── 📁 errors
+│   ├── 📁 mapper
+│   ├── 📁 utils
+│   └── 📁 validator
+├── ⚙️ .dockerignore
+├── ⚙️ .gitignore
+├── 🐳 Dockerfile
+├── 📄 Makefile
+├── 📝 README.md
+├── 📄 go.mod
+└── 📄 go.sum
+```

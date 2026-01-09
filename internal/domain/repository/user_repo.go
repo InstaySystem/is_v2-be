@@ -4,10 +4,15 @@ import (
 	"context"
 
 	"github.com/InstayPMS/backend/internal/domain/model"
+	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	FindByUsernameWithOutletAndDepartment(ctx context.Context, username string) (*model.User, error)
 
 	FindByIDWithOutletAndDepartment(ctx context.Context, id int64) (*model.User, error)
+
+	FindByID(ctx context.Context, id int64) (*model.User, error)
+
+	UpdateTx(tx *gorm.DB, id int64, updateData map[string]any) error
 }

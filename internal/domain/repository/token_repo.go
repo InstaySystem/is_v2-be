@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/InstayPMS/backend/internal/domain/model"
+	"gorm.io/gorm"
 )
 
 type TokenRepository interface {
@@ -12,4 +13,6 @@ type TokenRepository interface {
 	UpdateByToken(ctx context.Context, token string, updateData map[string]any) error
 
 	FindByToken(ctx context.Context, token string) (*model.Token, error)
+
+	UpdateByUserIDTx(tx *gorm.DB, userID int64, updateData map[string]any) error
 }

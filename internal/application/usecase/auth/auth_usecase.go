@@ -16,4 +16,6 @@ type AuthUseCase interface {
 	RefreshToken(ctx context.Context, ua, refreshToken string) (string, string, error)
 
 	GetMe(ctx context.Context, userID int64) (*model.User, error)
+
+	ChangePassword(ctx context.Context, userID int64, req dto.ChangePasswordRequest) error
 }

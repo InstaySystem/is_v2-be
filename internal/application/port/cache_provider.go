@@ -17,4 +17,6 @@ type CacheProvider interface {
 	GetString(ctx context.Context, key string) (string, error)
 
 	GetInt(ctx context.Context, key string) (int, error)
+
+	Increment(ctx context.Context, key string) error
 }

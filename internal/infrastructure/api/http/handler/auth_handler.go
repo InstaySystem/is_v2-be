@@ -141,11 +141,38 @@ func (h *AuthHandler) GetMe(c *gin.Context) {
 	})
 }
 
-func (h *AuthHandler) storeTokenInCookie(
-	c *gin.Context,
-	accessToken, refreshToken string,
-	accessExpiresIn, refreshExpiresIn int,
-) {
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	userID := c.GetInt64(middleware.CtxUserID)
+	if userID == 0 {
+		c.Error(errors.ErrUnAuth)
+		return
+	}
+
+	var req dto.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	if err := h.authUC.ChangePassword(ctx, userID, req); err != nil {
+		c.Error(err)
+		return
+	}
+
+	h.storeTokenInCookie(c, "", "", -1, -1)
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeChangePasswordSuccess, "Change password successfully", nil)
+}
+
+func (h *AuthHandler) storeTokenInCookie(c *gin.Context, accessToken, refreshToken string, accessExpiresIn, refreshExpiresIn int) {
 	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 	domain := utils.ExtractRootDomain(c.Request.Host)
 

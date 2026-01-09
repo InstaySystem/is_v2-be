@@ -15,10 +15,12 @@ import (
 	"github.com/InstayPMS/backend/pkg/utils"
 	"github.com/sony/sonyflake/v2"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type authUseCaseImpl struct {
 	cfg       config.JWTConfig
+	db        *gorm.DB
 	log       *zap.Logger
 	idGen     *sonyflake.Sonyflake
 	jwtPro    port.JWTProvider
@@ -29,6 +31,7 @@ type authUseCaseImpl struct {
 
 func NewAuthUseCase(
 	cfg config.JWTConfig,
+	db *gorm.DB,
 	log *zap.Logger,
 	idGen *sonyflake.Sonyflake,
 	jwtPro port.JWTProvider,
@@ -38,6 +41,7 @@ func NewAuthUseCase(
 ) AuthUseCase {
 	return &authUseCaseImpl{
 		cfg,
+		db,
 		log,
 		idGen,
 		jwtPro,
@@ -123,14 +127,13 @@ func (u *authUseCaseImpl) Logout(ctx context.Context, accessToken, refreshToken 
 		if errors.Is(err, customErr.ErrInvalidUser) {
 			return err
 		}
-		u.log.Error("update token by user id and token failed", zap.Error(err))
+		u.log.Error("update token by token failed", zap.Error(err))
 		return err
 	}
 
 	redisKey := fmt.Sprintf("black_list:%s", accessToken)
 	if err := u.cachePro.SetString(ctx, redisKey, "1", accessTTL); err != nil {
 		u.log.Error("save black list failed", zap.Error(err))
-		return err
 	}
 
 	return nil
@@ -209,4 +212,51 @@ func (u *authUseCaseImpl) GetMe(ctx context.Context, userID int64) (*model.User,
 	}
 
 	return user, nil
+}
+
+func (u *authUseCaseImpl) ChangePassword(ctx context.Context, userID int64, req dto.ChangePasswordRequest) error {
+	user, err := u.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		u.log.Error("find user by id failed", zap.Int64("id", userID), zap.Error(err))
+		return err
+	}
+
+	if user == nil {
+		return customErr.ErrUnAuth
+	}
+
+	if err = utils.VerifyPassword(req.OldPassword, user.Password); err != nil {
+		return customErr.ErrInvalidPassword
+	}
+
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		u.log.Error("hash password failed", zap.Error(err))
+		return err
+	}
+
+	if err = u.db.Transaction(func(tx *gorm.DB) error {
+		if err = u.userRepo.UpdateTx(tx, userID, map[string]any{"password": hashedPassword}); err != nil {
+			if errors.Is(err, customErr.ErrUserNotFound) {
+				return customErr.ErrInvalidToken
+			}
+			u.log.Error("update password failed", zap.Error(err))
+			return err
+		}
+
+		if err := u.tokenRepo.UpdateByUserIDTx(tx, userID, map[string]any{"revoked_at": time.Now()}); err != nil {
+			u.log.Error("update token by user id failed", zap.Error(err))
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil
+	}
+
+	redisKey := fmt.Sprintf("user_version:%d", user.ID)
+	if err = u.cachePro.Increment(ctx, redisKey); err != nil {
+		u.log.Error("increase token version failed", zap.Error(err))
+	}
+
+	return nil
 }

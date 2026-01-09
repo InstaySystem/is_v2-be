@@ -7,6 +7,8 @@ const (
 
 	CodeLogoutSuccess = 1002
 
+	CodeChangePasswordSuccess = 1003
+
 	CodeBadRequest = 4000
 
 	CodeLoginFailed = 4001
@@ -16,6 +18,10 @@ const (
 	CodeUnAuth = 4003
 
 	CodeNoRefreshToken = 4004
+
+	CodeUserNotFound = 4005
+
+	CodeInvalidPassword = 4006
 
 	CodeInternalError = 5000
 )

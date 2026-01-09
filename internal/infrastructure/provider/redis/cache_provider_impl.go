@@ -60,3 +60,7 @@ func (p *cacheProviderImpl) GetInt(ctx context.Context, key string) (int, error)
 
 	return num, nil
 }
+
+func (p *cacheProviderImpl) Increment(ctx context.Context, key string) error {
+	return p.rdb.Incr(ctx, key).Err()
+}

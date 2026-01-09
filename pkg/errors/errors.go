@@ -15,7 +15,11 @@ var (
 
 	ErrUnAuth = NewAPIError(http.StatusUnauthorized, constants.CodeUnAuth, "Unauthorized")
 
+	ErrInvalidPassword = NewAPIError(http.StatusBadRequest, constants.CodeInvalidPassword, "Incorrect password")
+
 	ErrInvalidUser = NewAPIError(http.StatusForbidden, constants.CodeNoRefreshToken, "Please login again")
+
+	ErrUserNotFound = NewAPIError(http.StatusNotFound, constants.CodeUserNotFound, "User not found")
 )
 
 type APIError struct {
