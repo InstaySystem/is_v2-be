@@ -14,5 +14,9 @@ type TokenRepository interface {
 
 	FindByToken(ctx context.Context, token string) (*model.Token, error)
 
-	UpdateByUserIDTx(tx *gorm.DB, userID int64, updateData map[string]any) error
+	UpdateAllByUserIDTx(tx *gorm.DB, userID int64, updateData map[string]any) error
+
+	DeleteAllByUserIDTx(tx *gorm.DB, userID int64) error
+
+	DeleteAllByUserIDsTx(tx *gorm.DB, userIDs []int64) error
 }

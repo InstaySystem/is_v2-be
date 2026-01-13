@@ -129,6 +129,30 @@ func (r *userRepositoryImpl) ExistsActiveAdminExceptID(ctx context.Context, id i
 	return count > 0, nil
 }
 
+func (r *userRepositoryImpl) DeleteTx(tx *gorm.DB, id int64) error {
+	result := tx.Where("id = ?", id).
+		Delete(&model.User{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return customErr.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *userRepositoryImpl) DeleteAllByIDsTx(tx *gorm.DB, ids []int64) (int64, error) {
+	result := tx.Where("id IN ?", ids).
+		Delete(&model.User{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return result.RowsAffected, nil
+}
+
 func (r *userRepositoryImpl) FindAllWithDepartmentPaginated(ctx context.Context, query dto.UserPaginationQuery) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64

@@ -175,8 +175,8 @@ func (u *userUseCaseImpl) UpdateUser(ctx context.Context, userID, currentUserID 
 		}
 
 		if *req.IsActive == false {
-			if err := u.tokenRepo.UpdateByUserIDTx(tx, userID, map[string]any{"revoked_at": time.Now()}); err != nil {
-				u.log.Error("update token by user id failed", zap.Error(err))
+			if err := u.tokenRepo.UpdateAllByUserIDTx(tx, userID, map[string]any{"revoked_at": time.Now()}); err != nil {
+				u.log.Error("update all token by user id failed", zap.Error(err))
 				return err
 			}
 		}
@@ -194,4 +194,114 @@ func (u *userUseCaseImpl) UpdateUser(ctx context.Context, userID, currentUserID 
 	}
 
 	return nil
+}
+
+func (u *userUseCaseImpl) UpdateUserPassword(ctx context.Context, userID, currentUserID int64, newPassword string) error {
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		u.log.Error("hash password failed", zap.Error(err))
+		return err
+	}
+
+	if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		updateData := map[string]any{
+			"password":      hashedPassword,
+			"updated_by_id": currentUserID,
+		}
+
+		if err = u.userRepo.UpdateTx(tx, userID, updateData); err != nil {
+			if errors.Is(err, customErr.ErrUserNotFound) {
+				return err
+			}
+			u.log.Error("update password failed", zap.Error(err))
+			return err
+		}
+
+		if err := u.tokenRepo.UpdateAllByUserIDTx(tx, userID, map[string]any{"revoked_at": time.Now()}); err != nil {
+			u.log.Error("update all token by user id failed", zap.Error(err))
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	redisKey := fmt.Sprintf("user_version:%d", userID)
+	if err = u.cachePro.Increment(ctx, redisKey); err != nil {
+		u.log.Error("increase token version failed", zap.Error(err))
+	}
+
+	return nil
+}
+
+func (u *userUseCaseImpl) DeleteUser(ctx context.Context, userID, currentUserID int64) error {
+	if userID == currentUserID {
+		exists, err := u.userRepo.ExistsActiveAdminExceptID(ctx, userID)
+		if err != nil {
+			u.log.Error("check active admin except id failed", zap.Int64("id", userID), zap.Error(err))
+			return err
+		}
+		if !exists {
+			return customErr.ErrNeedAdmin
+		}
+	}
+
+	if err := u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := u.userRepo.DeleteTx(tx, userID); err != nil {
+			if errors.Is(err, customErr.ErrUserNotFound) {
+				return err
+			}
+			if ok, _ := utils.IsForeignKeyViolation(err); ok {
+				return customErr.ErrProtectedRecord
+			}
+			u.log.Error("delete user failed", zap.Int64("id", userID), zap.Error(err))
+			return err
+		}
+
+		if err := u.tokenRepo.DeleteAllByUserIDTx(tx, userID); err != nil {
+			u.log.Error("delete all token by user id failed", zap.Error(err))
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	redisKey := fmt.Sprintf("user_version:%d", userID)
+	if err := u.cachePro.Del(ctx, redisKey); err != nil {
+		u.log.Error("delete user version failed", zap.Error(err))
+	}
+
+	return nil
+}
+
+func (u *userUseCaseImpl) DeleteUsers(ctx context.Context, currentUserID int64, userIDs []int64) (int64, error) {
+	var rowDeleted int64
+	var err error
+	if err = u.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		rowDeleted, err = u.userRepo.DeleteAllByIDsTx(tx, userIDs)
+		if err != nil {
+			u.log.Error("delete users failed", zap.Error(err))
+			return err
+		}
+
+		if err := u.tokenRepo.DeleteAllByUserIDsTx(tx, userIDs); err != nil {
+			u.log.Error("delete all token by user ids failed", zap.Error(err))
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+
+	for _, id := range userIDs {
+		redisKey := fmt.Sprintf("user_version:%d", id)
+		if err := u.cachePro.Del(ctx, redisKey); err != nil {
+			u.log.Error("delete user version failed", zap.Error(err))
+		}
+	}
+
+	return rowDeleted, nil
 }

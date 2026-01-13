@@ -12,6 +12,9 @@ const (
 	CodeCreateUserSuccess           = 1008
 	CodeCreateDepartmentSuccess     = 1009
 	CodeUpdateUserSuccess           = 1010
+	CodeUpdateUserPasswordSuccess   = 1011
+	CodeDeleteUserSuccess           = 1012
+	CodeDeleteUsersSuccess          = 1013
 	CodeBadRequest                  = 4000
 	CodeLoginFailed                 = 4001
 	CodeInvalidToken                = 4002
@@ -30,6 +33,8 @@ const (
 	CodeNameAlreadyExists           = 4015
 	CodeInvalidID                   = 4016
 	CodeNeedAdmin                   = 4017
+	CodeProtectedRecord             = 4018
+	CodeHasUserNotFound             = 4019
 	CodeInternalError               = 5000
 
 	ExchangeEmail       = "email.send"

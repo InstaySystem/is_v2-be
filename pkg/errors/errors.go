@@ -39,6 +39,10 @@ var (
 
 	ErrInvalidID = NewAPIError(http.StatusBadRequest, constants.CodeInvalidID, "Invalid id")
 
+	ErrProtectedRecord = NewAPIError(http.StatusConflict, constants.CodeProtectedRecord, "Protected record")
+
+	ErrHasUserNotFound = NewAPIError(http.StatusConflict, constants.CodeHasUserNotFound, "Has user not found")
+
 	ErrNeedAdmin = NewAPIError(http.StatusBadRequest, constants.CodeNeedAdmin, "Need 1 active administrator")
 
 	ErrUsernameAlreadyExists = NewAPIError(http.StatusConflict, constants.CodeUsernameAlreadyExists, "Username already exists")

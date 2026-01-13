@@ -30,4 +30,8 @@ type UserRepository interface {
 	FindAllWithDepartmentPaginated(ctx context.Context, query dto.UserPaginationQuery) ([]*model.User, int64, error)
 
 	ExistsActiveAdminExceptID(ctx context.Context, id int64) (bool, error)
+
+	DeleteTx(tx *gorm.DB, id int64) error
+
+	DeleteAllByIDsTx(tx *gorm.DB, ids []int64) (int64, error)
 }

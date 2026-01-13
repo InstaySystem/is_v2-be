@@ -38,7 +38,7 @@ func (r *tokenRepositoryImpl) UpdateByToken(ctx context.Context, token string, u
 	return nil
 }
 
-func (r *tokenRepositoryImpl) UpdateByUserIDTx(tx *gorm.DB, userID int64, updateData map[string]any) error {
+func (r *tokenRepositoryImpl) UpdateAllByUserIDTx(tx *gorm.DB, userID int64, updateData map[string]any) error {
 	return tx.Model(&model.Token{}).
 		Where("user_id = ?", userID).
 		Updates(updateData).Error
@@ -56,4 +56,14 @@ func (r *tokenRepositoryImpl) FindByToken(ctx context.Context, hashedToken strin
 	}
 
 	return &token, nil
+}
+
+func (r *tokenRepositoryImpl) DeleteAllByUserIDTx(tx *gorm.DB, userID int64) error {
+	return tx.Where("user_id = ?", userID).
+		Delete(&model.Token{}).Error
+}
+
+func (r *tokenRepositoryImpl) DeleteAllByUserIDsTx(tx *gorm.DB, userIDs []int64) error {
+	return tx.Where("user_id IN ?", userIDs).
+		Delete(&model.Token{}).Error
 }

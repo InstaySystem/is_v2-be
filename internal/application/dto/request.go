@@ -86,3 +86,11 @@ type UpdateUserRequest struct {
 	IsActive     *bool          `json:"is_active" binding:"required"`
 	DepartmentID *int64         `json:"department_id" binding:"omitempty"`
 }
+
+type UpdateUserPasswordRequest struct {
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+type DeleteManyRequest struct {
+	IDs []int64 `json:"ids" binding:"required,min=1,dive,required"`
+}

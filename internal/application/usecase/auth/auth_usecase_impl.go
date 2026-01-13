@@ -129,7 +129,7 @@ func (u *authUseCaseImpl) Logout(ctx context.Context, accessToken, refreshToken 
 		if errors.Is(err, customErr.ErrInvalidUser) {
 			return err
 		}
-		u.log.Error("update token by token failed", zap.Error(err))
+		u.log.Error("update all token by token failed", zap.Error(err))
 		return err
 	}
 
@@ -254,8 +254,8 @@ func (u *authUseCaseImpl) ChangePassword(ctx context.Context, userID int64, req 
 			return err
 		}
 
-		if err := u.tokenRepo.UpdateByUserIDTx(tx, userID, map[string]any{"revoked_at": time.Now()}); err != nil {
-			u.log.Error("update token by user id failed", zap.Error(err))
+		if err := u.tokenRepo.UpdateAllByUserIDTx(tx, userID, map[string]any{"revoked_at": time.Now()}); err != nil {
+			u.log.Error("update all token by user id failed", zap.Error(err))
 			return err
 		}
 		return nil
@@ -405,8 +405,8 @@ func (u *authUseCaseImpl) ResetPassword(ctx context.Context, req dto.ResetPasswo
 			return err
 		}
 
-		if err := u.tokenRepo.UpdateByUserIDTx(tx, user.ID, map[string]any{"revoked_at": time.Now()}); err != nil {
-			u.log.Error("update token by user id failed", zap.Error(err))
+		if err := u.tokenRepo.UpdateAllByUserIDTx(tx, user.ID, map[string]any{"revoked_at": time.Now()}); err != nil {
+			u.log.Error("update all token by user id failed", zap.Error(err))
 			return err
 		}
 		return nil

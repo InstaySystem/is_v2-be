@@ -193,3 +193,96 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	utils.APIResponse(c, http.StatusOK, constants.CodeUpdateUserSuccess, "User updated successfully", nil)
 }
+
+func (h *UserHandler) UpdateUserPassword(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	userIDStr := c.Param("id")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		c.Error(errors.ErrInvalidID)
+		return
+	}
+
+	currentUserID := c.GetInt64(middleware.CtxUserID)
+	if currentUserID == 0 {
+		c.Error(errors.ErrUnAuth)
+		return
+	}
+
+	var req dto.UpdateUserPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	if err := h.userUC.UpdateUserPassword(ctx, userID, currentUserID, req.NewPassword); err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeUpdateUserSuccess, "User password updated successfully", nil)
+}
+
+func (h *UserHandler) DeleteUser(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	userIDStr := c.Param("id")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		c.Error(errors.ErrInvalidID)
+		return
+	}
+
+	currentUserID := c.GetInt64(middleware.CtxUserID)
+	if currentUserID == 0 {
+		c.Error(errors.ErrUnAuth)
+		return
+	}
+
+	if err := h.userUC.DeleteUser(ctx, userID, currentUserID); err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeDeleteUserSuccess, "User deleted successfully", nil)
+}
+
+func (h *UserHandler) DeleteUsers(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	currentUserID := c.GetInt64(middleware.CtxUserID)
+	if currentUserID == 0 {
+		c.Error(errors.ErrUnAuth)
+		return
+	}
+
+	var req dto.DeleteManyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		field, tag, param := validator.HandleRequestError(err)
+		c.Error(errors.ErrBadRequest.WithData(gin.H{
+			"field": field,
+			"tag":   tag,
+			"param": param,
+		}))
+		return
+	}
+
+	rowDeleted, err := h.userUC.DeleteUsers(ctx, currentUserID, req.IDs)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	utils.APIResponse(c, http.StatusOK, constants.CodeDeleteUsersSuccess, "Users deleted successfully", gin.H{
+		"count": rowDeleted,
+	})
+}
